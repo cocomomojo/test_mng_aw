@@ -28,3 +28,8 @@ git add .github/workflows/gh-aw-runner.yml
 # git add .github/aw/   # Agentic 指示がある場合
 git commit -m "Add gh-aw runner workflow (PoC)"
 git push origin test_mng_aw
+
+
+settings/actions
+Workflow permissions　を　
+Read and write permissions　に変更する。
