@@ -60,13 +60,4 @@ jobs:
 
       # cache marker step removed
 
-      - name: Run gh aw for the PR (example)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
-          # Adjust the following command to match your gh-aw workflow name or file
-          # This example assumes .github/aw/pr-test-generator.md exists and gh-aw will pick it up.
-          gh aw run pr-test-generator -r "$REPO" --ref "${{ github.event.pull_request.head.ref }}" || true
-# 実際にgh aw runを呼び出してPR向けのワークフローを実行します。
+      # gh-aw run step removed per request: agentic execution is handled via precompiled lock.yml or separate workflow
