@@ -1,13 +1,16 @@
 name: Run gh-aw on PR with cached gh-aw extension
+# このワークフローはPR作成/更新時にgh-awをキャッシュ付きで実行します。
 
 on:
   pull_request:
     types: [opened, edited, synchronize]
+# PRの新規作成・更新・同期時に起動する設定です。
 
 permissions:
   contents: read
   issues: write
   pull-requests: read
+# GitHubトークンに必要な権限を明示しています。
 
 jobs:
   run-agentic:
@@ -19,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+# gh-awが差分だけでなく完全な履歴を使えるように全履歴を取得しておきます。
 
       - name: Restore gh-aw extension cache
         id: cache-gh-aw
@@ -31,6 +35,7 @@ jobs:
           key: gh-aw-extensions-${{ runner.os }}-${{ hashFiles('.github/aw/**') }}
           restore-keys: |
             gh-aw-extensions-${{ runner.os }}-
+# gh-aw拡張を毎回インストールせずキャッシュから復元するための設定です。
 
       - name: Ensure gh CLI installed
         run: |
@@ -42,6 +47,7 @@ jobs:
             sudo apt-get install -y gh
           fi
           gh --version
+# ghコマンドがない場合はインストールし、そのバージョンを確認します。
 
       - name: Authenticate gh CLI with GITHUB_TOKEN
         env:
@@ -49,6 +55,7 @@ jobs:
         run: |
           echo "$GH_TOKEN" | gh auth login --with-token
           gh auth status
+# GITHUB_TOKENを使ってgh CLIにログインし、ステータスを確認します。
 
       - name: Install gh-aw extension if missing
         run: |
@@ -61,12 +68,14 @@ jobs:
               gh extension install ~/.cache/gh-aw-install/gh-aw || true
             }
           fi
+# gh-awが未導入ならインストールし、失敗しても再試行する流れです。
 
       - name: Populate cache marker if newly installed
         if: steps.cache-gh-aw.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/.local/share/gh/extensions
           echo "installed at $(date -u)" > ~/.local/share/gh/extensions/.gh-aw-installed
+# キャッシュが使われていなければマーカーを書き込んで新規インストール済みと記録します。
 
       - name: Run gh aw for the PR (example)
         env:
@@ -77,3 +86,4 @@ jobs:
           # Adjust the following command to match your gh-aw workflow name or file
           # This example assumes .github/aw/pr-test-generator.md exists and gh-aw will pick it up.
           gh aw run --repo "$REPO" --event pull_request --pr "$PR_NUMBER" || true
+# 実際にgh aw runを呼び出してPR向けのワークフローを実行します。

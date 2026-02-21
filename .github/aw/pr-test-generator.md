@@ -1,25 +1,25 @@
-# PR Test Case Generator
+# PR テストケース生成器
 
-Goal:
-Read the pull request title, body, and git diff, then generate test cases as a Markdown checklist.
+目的:
+プルリクエストのタイトル、本文、差分を読み取り、テスト項目を Markdown のチェックリストで生成する。
 
-Instructions:
-1. Read PR metadata: title, body, author, labels.
-2. Read the git diff (file paths and changed hunks).
-3. Identify impacted areas (components, pages, APIs) and generate test perspectives: functionality, regression, edge cases, security, performance, and UI (if applicable).
-4. For each test case produce:
-   - **title** (one-line)
-   - **short description** (1 sentence)
-   - **expected result** (1 sentence)
-   - optional **steps** (if the case requires multiple steps)
-5. Output format: a Markdown checklist. Example:
-   - [ ] **Login: invalid password** — Attempt login with wrong password; *expected:* show "invalid credentials".
-   - [ ] **Profile: avatar upload** — Upload large image; *expected:* image accepted and resized.
-6. If the diff touches only docs or comments, output a short note and do not create test cases.
-7. Add a short summary at the top: impacted components and confidence level (high/medium/low).
-8. Mark the Issue as draft and add label `ai-generated-tests`.
+指示:
+1. PR のメタ情報（タイトル、本文、作成者、ラベル）を確認する。
+2. git diff（変更ファイルと変更箇所）を確認し、影響範囲（コンポーネント、ページ、API）を特定する。
+3. 次の観点でテスト観点を生成する: 機能、回帰、境界値、セキュリティ、パフォーマンス、UI（該当する場合）。
+4. 各テスト項目は以下を出力する:
+   - **タイトル**（1行）
+   - **簡潔な説明**（1文）
+   - **期待結果**（1文）
+   - 必要なら **手順**（箇条書き、最大3ステップ）
+5. 出力フォーマットは Markdown のチェックリストとする。例:
+   - [ ] **ログイン: 無効なパスワード** — 間違ったパスワードでログインを試行する; *期待:* 「認証に失敗しました」と表示される。
+   - [ ] **プロフィール: アバターアップロード** — 大きな画像をアップロードする; *期待:* 画像が受け入れられリサイズされる。
+6. 差分がドキュメントやコメントのみの場合は短い注記を出力し、テスト項目は作成しない。
+7. 出力の先頭に「影響コンポーネント」と「信頼度（高/中/低）」の短い要約を付ける。
+8. 生成した Issue はドラフトにし、ラベル `ai-generated-tests` を付与する。
 
-Constraints:
-- Do not include any secrets or full source code in the output.
-- Keep each test case concise (max 2 lines).
-- If uncertain, prefer conservative, review-required wording.
+制約:
+- 秘密情報やソースコードの全文を出力しないこと。
+- 各テスト項目は簡潔に（最大2行）まとめること。
+- 不確かな場合は「要レビュー」など保守的な表現にすること。
