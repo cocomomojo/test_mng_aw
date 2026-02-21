@@ -3,6 +3,8 @@ name: pr-test-generator
 description: Generate test cases and issue from PR metadata + diff
 on:
    workflow_dispatch:
+safe-outputs:
+   create-issue: ~
 ---
 
 # PR テストケース生成器
