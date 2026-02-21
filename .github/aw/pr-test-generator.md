@@ -1,5 +1,11 @@
-# PR テストケース生成器
+---
+name: pr-test-generator
+description: Generate test cases and issue from PR metadata + diff
+on:
+   workflow_dispatch:
+---
 
+# PR テストケース生成器
 目的:
 プルリクエストのタイトル、本文、差分を読み取り、テスト項目を Markdown のチェックリストで生成する。
 
