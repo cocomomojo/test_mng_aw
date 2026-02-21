@@ -50,9 +50,19 @@ jobs:
           gh --version
 # ghコマンドがない場合はインストールし、そのバージョンを確認します。
 
-      - name: Authenticate gh CLI with GITHUB_TOKEN
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.ACTIONS_BOT_APPID }}
+          private-key: ${{ secrets.ACTIONS_BOT_PRIVATE_KEY }}
+          permission-actions: write
+          permission-contents: read
+          permission-pull-requests: read
+
+      - name: Authenticate gh CLI with GitHub App token (fallback to GITHUB_TOKEN)
         env:
-          GH_TOKEN: ${{ env.GH_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
         run: |
           echo "$GH_TOKEN" | gh auth login --with-token || true
           gh auth status || true
@@ -80,7 +90,7 @@ jobs:
 
       - name: Run gh aw for the PR (example)
         env:
-          GH_TOKEN: ${{ env.GH_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
