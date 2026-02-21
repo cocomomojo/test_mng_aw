@@ -85,5 +85,5 @@ jobs:
           REPO=${{ github.repository }}
           # Adjust the following command to match your gh-aw workflow name or file
           # This example assumes .github/aw/pr-test-generator.md exists and gh-aw will pick it up.
-          gh aw run --repo "$REPO" --event pull_request --pr "$PR_NUMBER" || true
+          gh aw run pr-test-generator -r "$REPO" --ref "${{ github.event.pull_request.head.ref }}" || true
 # 実際にgh aw runを呼び出してPR向けのワークフローを実行します。
