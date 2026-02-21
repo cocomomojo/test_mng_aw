@@ -1,0 +1,80 @@
+name: Run gh-aw on PR with cached gh-aw extension
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  run-agentic:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore gh-aw extension cache
+        id: cache-gh-aw
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/gh/extensions
+            ~/.config/gh/extensions
+            ~/.cache/gh-aw-install
+          key: gh-aw-extensions-${{ runner.os }}-${{ hashFiles('.github/aw/**') }}
+          restore-keys: |
+            gh-aw-extensions-${{ runner.os }}-
+
+      - name: Ensure gh CLI installed
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "Installing gh CLI"
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y gh
+          else
+            echo "gh already installed: $(gh --version)"
+          fi
+
+      - name: Authenticate gh CLI with GITHUB_TOKEN
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+
+      - name: Install gh-aw extension if missing
+        run: |
+          mkdir -p ~/.local/share/gh/extensions ~/.config/gh/extensions ~/.cache/gh-aw-install
+          if gh extension list | grep -q "gh-aw"; then
+            echo "gh-aw already installed"
+          else
+            echo "Installing gh-aw extension"
+            gh extension install github/gh-aw || {
+              echo "Fallback: clone and install locally"
+              git clone https://github.com/github/gh-aw ~/.cache/gh-aw-install/gh-aw
+              gh extension install ~/.cache/gh-aw-install/gh-aw || true
+            }
+          fi
+
+      - name: Populate cache marker if newly installed
+        if: steps.cache-gh-aw.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/share/gh/extensions
+          echo "installed at $(date -u)" > ~/.local/share/gh/extensions/.gh-aw-installed
+
+      - name: Run gh aw for the PR (example)
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          # 実際の gh aw コマンドは gh-aw のバージョンとワークフロー定義に依存します。
+          # 下記は例。必要に応じて引数を調整してください。
+          gh aw run --repo "$REPO" --event pull_request --pr "$PR_NUMBER" || true
