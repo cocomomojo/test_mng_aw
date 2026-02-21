@@ -7,6 +7,7 @@ on:
 # PRの新規作成・更新・同期時に起動する設定です。
 
 permissions:
+  actions: read
   contents: read
   issues: write
   pull-requests: read
