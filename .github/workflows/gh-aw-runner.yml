@@ -1,4 +1,4 @@
-name: Run gh-aw on PR with cached gh-aw extension
+name: make issue and test case from pr diff
 # このワークフローはPR作成/更新時にgh-awをキャッシュ付きで実行します。
 
 on:
@@ -16,8 +16,6 @@ permissions:
 jobs:
   run-agentic:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
@@ -25,18 +23,7 @@ jobs:
           fetch-depth: 1
 # gh-awが差分だけでなく完全な履歴を使えるように全履歴を取得しておきます。
 
-      - name: Restore gh-aw extension cache
-        id: cache-gh-aw
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/gh/extensions
-            ~/.config/gh/extensions
-            ~/.cache/gh-aw-install
-          key: gh-aw-extensions-${{ runner.os }}-${{ hashFiles('.github/aw/**') }}
-          restore-keys: |
-            gh-aw-extensions-${{ runner.os }}-
-# gh-aw拡張を毎回インストールせずキャッシュから復元するための設定です。
+      # gh-aw extension will be installed at runtime if missing; cache removed to simplify runner behavior
 
       - name: Ensure gh CLI installed
         run: |
@@ -71,12 +58,7 @@ jobs:
           fi
 # gh-awが未導入ならインストールし、失敗しても再試行する流れです。
 
-      - name: Populate cache marker if newly installed
-        if: steps.cache-gh-aw.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/.local/share/gh/extensions
-          echo "installed at $(date -u)" > ~/.local/share/gh/extensions/.gh-aw-installed
-# キャッシュが使われていなければマーカーを書き込んで新規インストール済みと記録します。
+      # cache marker step removed
 
       - name: Run gh aw for the PR (example)
         env:

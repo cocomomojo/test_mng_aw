@@ -23,11 +23,16 @@
 #
 # Generate test cases and issue from PR metadata + diff
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"7f7d88325720093bf7dc40f63047eaa681b3cddcaa209ef40c5c654c078bbafe","compiler_version":"v0.48.1"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"5666d59470e87ff419c4228dffce809df89699f31d01d7f06b56839a7f9179f5","compiler_version":"v0.48.1"}
 
 name: "pr-test-generator"
 "on":
-  workflow_dispatch:
+  workflow_run:
+    # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
+    types:
+    - completed
+    workflows:
+    - make issue and test case from pr diff
 
 permissions: {}
 
@@ -38,6 +43,11 @@ run-name: "pr-test-generator"
 
 jobs:
   activation:
+    needs: pre_activation
+    # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
+    if: >
+      (needs.pre_activation.outputs.activated == 'true') && ((github.event_name != 'workflow_run') || ((github.event.workflow_run.repository.id == github.repository_id) &&
+      (!(github.event.workflow_run.repository.fork))))
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -245,6 +255,7 @@ jobs:
     needs: activation
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     concurrency:
       group: "gh-aw-copilot-${{ github.workflow }}"
@@ -1043,6 +1054,28 @@ jobs:
           name: threat-detection.log
           path: /tmp/gh-aw/threat-detection/detection.log
           if-no-files-found: ignore
+
+  pre_activation:
+    runs-on: ubuntu-slim
+    outputs:
+      activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+    steps:
+      - name: Setup Scripts
+        uses: github/gh-aw/actions/setup@v0.48.1
+        with:
+          destination: /opt/gh-aw/actions
+      - name: Check team membership for workflow
+        id: check_membership
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          GH_AW_REQUIRED_ROLES: admin,maintainer,write
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { setupGlobals } = require('/opt/gh-aw/actions/setup_globals.cjs');
+            setupGlobals(core, github, context, exec, io);
+            const { main } = require('/opt/gh-aw/actions/check_membership.cjs');
+            await main();
 
   safe_outputs:
     needs:

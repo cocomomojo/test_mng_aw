@@ -1,8 +1,15 @@
 ---
 name: pr-test-generator
 description: Generate test cases and issue from PR metadata + diff
+engine: copilot
 on:
-   workflow_dispatch:
+   workflow_run:
+     workflows: ["make issue and test case from pr diff"]
+     types:
+       - completed
+permissions:
+  contents: read
+  actions: read
 safe-outputs:
    create-issue: ~
 ---
