@@ -15,8 +15,10 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout
+      - name: Checkout full history
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Restore gh-aw extension cache
         id: cache-gh-aw
@@ -33,21 +35,20 @@ jobs:
       - name: Ensure gh CLI installed
         run: |
           if ! command -v gh >/dev/null 2>&1; then
-            echo "Installing gh CLI"
             curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
             sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
             echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y gh
-          else
-            echo "gh already installed: $(gh --version)"
           fi
+          gh --version
 
       - name: Authenticate gh CLI with GITHUB_TOKEN
         env:
           GH_TOKEN: ${{ env.GH_TOKEN }}
         run: |
           echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth status
 
       - name: Install gh-aw extension if missing
         run: |
@@ -55,9 +56,7 @@ jobs:
           if gh extension list | grep -q "gh-aw"; then
             echo "gh-aw already installed"
           else
-            echo "Installing gh-aw extension"
             gh extension install github/gh-aw || {
-              echo "Fallback: clone and install locally"
               git clone https://github.com/github/gh-aw ~/.cache/gh-aw-install/gh-aw
               gh extension install ~/.cache/gh-aw-install/gh-aw || true
             }
@@ -75,6 +74,6 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
-          # 実際の gh aw コマンドは gh-aw のバージョンとワークフロー定義に依存します。
-          # 下記は例。必要に応じて引数を調整してください。
+          # Adjust the following command to match your gh-aw workflow name or file
+          # This example assumes .github/aw/pr-test-generator.md exists and gh-aw will pick it up.
           gh aw run --repo "$REPO" --event pull_request --pr "$PR_NUMBER" || true
