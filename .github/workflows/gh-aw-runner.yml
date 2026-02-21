@@ -54,8 +54,8 @@ jobs:
           GH_TOKEN: ${{ env.GH_TOKEN }}
         run: |
           echo "$GH_TOKEN" | gh auth login --with-token
-          gh auth status
-# GITHUB_TOKENを使ってgh CLIにログインし、ステータスを確認します。
+          gh auth status || true
+# GITHUB_TOKENを使ってgh CLIにログインし、ステータス確認は失敗しても再試行せずスキップします。
 
       - name: Install gh-aw extension if missing
         run: |
