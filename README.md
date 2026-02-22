@@ -165,12 +165,7 @@ gh aw init --repo cocomomojo/test_mng_aw
 
 ```bash
 # 例: ソースが .github/workflows/pr-test-generator.md の場合
-gh aw compile .github/workflows/pr-test-generator.md -o .github/workflows/lock.yml
-
-# 生成物をコミットして push
-git add .github/workflows/lock.yml
-git commit -m "Add generated lock.yml from gh-aw compile"
-git push origin YOUR_BRANCH
+gh aw compile .github/workflows/pr-test-generator.md 
 ```
 
 注意点:
@@ -180,7 +175,8 @@ git push origin YOUR_BRANCH
 6. 生成された `lock.yml` をコミットして push
 
 ```bash
-git add .github/workflows/lock.yml
+# 生成物をコミットして push
+git add .github/workflows/pr-test-generator.lock.yml
 git commit -m "Add generated lock.yml from gh-aw compile"
 git push origin YOUR_BRANCH
 ```
@@ -193,5 +189,3 @@ git push origin YOUR_BRANCH
 - `gh auth status` で認証状態を確認してください。
 
 ---
-
-もし追記してほしい項目（図、より詳細なファイル説明、実行ログの見方など）があれば教えてください。 :rocket
