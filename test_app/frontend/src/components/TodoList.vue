@@ -9,7 +9,7 @@
 
         <v-row class="mb-4">
           <v-col>
-            <v-text-field v-model="newTitle" label="新しい TODO を入力" outlined dense />
+            <v-text-field v-model="newTitle" label="新しい TODO を入力してください" outlined dense />
           </v-col>
           <v-col cols="auto">
             <v-btn color="primary" :disabled="!newTitle" @click="addTodo">追加</v-btn>
