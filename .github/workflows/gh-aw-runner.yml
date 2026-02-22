@@ -7,7 +7,7 @@ on:
 # PRの新規作成・更新・同期時に起動する設定です。
 
 permissions:
-  actions: write
+  actions: read
   contents: read
   issues: write
   pull-requests: read
@@ -23,41 +23,15 @@ jobs:
           fetch-depth: 1
 # gh-awが差分だけでなく完全な履歴を使えるように全履歴を取得しておきます。
 
-      # gh-aw extension will be installed at runtime if missing; cache removed to simplify runner behavior
+      # gh-aw はローカルで manual にコンパイルして `lock.yml` を push する運用のため
+      # runner 側では gh/gh-aw のインストールや認証処理を行わず最小化します。
 
-      - name: Ensure gh CLI installed
+      - name: Using precompiled lock.yml
         run: |
-          if ! command -v gh >/dev/null 2>&1; then
-            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-            sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-            sudo apt-get update
-            sudo apt-get install -y gh
-          fi
-          gh --version
-# ghコマンドがない場合はインストールし、そのバージョンを確認します。
-
-      - name: Authenticate gh CLI with GITHUB_TOKEN
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token || true
-          gh auth status || true
-# GITHUB_TOKENを使ってgh CLIにログインし、ステータス確認は失敗してもスキップします。
-
-      - name: Install gh-aw extension if missing
-        run: |
-          mkdir -p ~/.local/share/gh/extensions ~/.config/gh/extensions ~/.cache/gh-aw-install
-          if gh extension list | grep -q "gh-aw"; then
-            echo "gh-aw already installed"
+          echo "Using precompiled .github/workflows/lock.yml (no local compile)."
+          if [ -f .github/workflows/lock.yml ]; then
+            echo "lock.yml present:" && ls -l .github/workflows/lock.yml
           else
-            gh extension install github/gh-aw || {
-              git clone https://github.com/github/gh-aw ~/.cache/gh-aw-install/gh-aw
-              gh extension install ~/.cache/gh-aw-install/gh-aw || true
-            }
+            echo "WARNING: .github/workflows/lock.yml not found. Ensure you compiled and pushed it locally before opening/updating the PR."
+            exit 0
           fi
-# gh-awが未導入ならインストールし、失敗しても再試行する流れです。
-
-      # cache marker step removed
-
-      # gh-aw run step removed per request: agentic execution is handled via precompiled lock.yml or separate workflow
