@@ -61,12 +61,21 @@ flowchart LR
   Issues -->|確認| Developer["開発者がレビュー"]
 ```
 
+### 🧾 実例
 具体的な実行例（このリポジトリの実際の実行ログ）:
 
 - PR: https://github.com/cocomomojo/test_mng_aw/pull/16
 - runner 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22267189912
 - lock.yml 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22267201644
 - 生成された Issue: https://github.com/cocomomojo/test_mng_aw/issues/17
+
+
+
+- PR: https://github.com/cocomomojo/test_mng_aw/pull/18
+- runner 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22268723305
+- lock.yml 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22268725417
+- 生成された Issue: https://github.com/cocomomojo/test_mng_aw/issues/20
+
 
 ---
 
@@ -113,12 +122,33 @@ gh run view 22267189912 --repo cocomomojo/test_mng_aw
 
 ---
 
-## 📚 参考リンク
+## 🔐 必要なシークレット（COPILOT_GITHUB_TOKEN）
 
-- PR 実例: https://github.com/cocomomojo/test_mng_aw/pull/16
-- Runner 実行ログ: https://github.com/cocomomojo/test_mng_aw/actions/runs/22267189912
-- lock.yml 実行ログ: https://github.com/cocomomojo/test_mng_aw/actions/runs/22267201644
-- 生成された Issue: https://github.com/cocomomojo/test_mng_aw/issues/17
+このワークフローではリポジトリ操作や Agent 実行で追加のトークンを利用するケースがあるため、`COPILOT_GITHUB_TOKEN` という名前のリポジトリシークレットを用意してください。
+
+推奨手順（GitHub の UI）:
+
+1. リポジトリの GitHub ページに移動
+2. [Settings] → [Secrets and variables] → [Actions] を選択
+3. [New repository secret] をクリック
+4. Name に `COPILOT_GITHUB_TOKEN`、Value に生成した Personal Access Token（PAT）を入力して保存
+
+推奨トークンスコープ（運用により変わりますが最低限の例）:
+- repo（リポジトリ読み書きが必要な場合）
+- workflow（ワークフロー操作が必要な場合）
+
+gh CLI を使う例:
+
+```bash
+# 環境変数にトークンを設定してから実行
+export MY_PAT="ghp_xxx..."
+gh secret set COPILOT_GITHUB_TOKEN --body "$MY_PAT" --repo cocomomojo/test_mng_aw
+```
+
+セキュリティ注意点:
+- PAT は必要最小限の権限で発行してください。
+- 組織ポリシーで PAT の使用が制限されている場合は、Organization 管理者と相談してください。
+
 
 ---
 
@@ -189,3 +219,10 @@ git push origin YOUR_BRANCH
 - `gh auth status` で認証状態を確認してください。
 
 ---
+
+## 📚 参考リンク
+  - https://github.blog/jp/2026-02-16-automate-repository-tasks-with-github-agentic-workflows/
+  - https://tech.every.tv/entry/2026/02/20/142856
+  - https://zenn.dev/0h_n0/articles/b478604163b8e2
+  - https://qiita.com/railgun-0402/items/6b9362e1d78f3e26cf49
+  - https://qiita.com/hagix/items/525c3f42c6dad204e73e
