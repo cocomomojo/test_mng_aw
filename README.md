@@ -1,271 +1,119 @@
-## 🧩 このリポジトリについて
+# テスト管理自動化ワークスペース
 
-このワークスペースは、GitHub Agentic Workflows（gh-aw）を用いて、PR をトリガーに差分情報を Agent に渡し、Issue としてテスト項目を自動作成する PoC（Proof of Concept）です。
+このリポジトリは、PR 差分をもとにテストチェックリスト Issue を自動生成するための検証用構成です。  
+説明は **現状のファイルと挙動** に合わせて記載しています。
 
-構成、実行手順、動作確認方法、参考リンクをこの README にまとめます。
+## 目的
 
----
+- PR 更新をトリガーに自動処理を実行する
+- PR 内容に応じたテスト観点を Issue 化する
+- 生成フローを `gh-aw` ベースで管理する
 
-## 📁 主要ディレクトリ構成
+## 主要構成
 
-| パス | 説明 |
-|---|---|
-| `test_app/backend/` | Spring Boot ベースのバックエンド（ビルド：Gradle） |
-| `test_app/frontend/` | フロントエンド（Vite / Vue、テストに Playwright/Jest 等） |
-| `.github/workflows/` | GitHub Actions ワークフロー（gh-aw runner 等） |
+- `test_app/backend/` : バックエンド（Spring Boot / Gradle）
+- `test_app/frontend/` : フロントエンド（Vue / Vite）とテスト
+- `.github/workflows/` : GitHub Actions 定義
+- `.github/ISSUE_TEMPLATE/ai-generated-test.yml` : 手動起票時の Issue テンプレート
 
-詳細なファイル一覧（抜粋）:
-
-| ファイル | 目的 |
-|---|---|
-| `.github/workflows/gh-aw-runner.yml` | gh-aw runner を起動する Workflow |
-| `.github/workflows/lock.yml` | Runner 実行後のロックや次工程を扱う Workflow（例） |
-| `test_app/` | アプリ本体（backend/frontend） |
-
----
-
-## 🔧 動作環境と事前準備
-
-- OS: Linux（開発環境）
-- Git, gh CLI（必要な場合は gh-aw 拡張）
-
-ローカルでの最小準備例:
-
-```bash
-# gh の拡張（必要なら）
-gh extension install github/gh-aw || true
-
-# Git のユーザー設定（初回のみ）
-git config --global user.email "you@example.com"
-git config --global user.name "yourname"
-```
-
-注意: リポジトリ設定で Actions の Workflow permissions はケースにより変わります。
-
-- 自動でワークフローからリポジトリへファイルを commit/push したい場合: "Read and write" が必要です（files/branches の更新）。
-- 本リポジトリの現在の運用（`gh aw compile` はローカル手動実行 → 生成ファイルを手動 push）では、ワークフローはリポジトリを書き換えないため `contents: read`（読み取り）で十分です。
-
-※ Issue 作成は `issues: write` が設定されていれば動作します。
-
----
-
-## 🚀 全体フロー
-
-下記の mermaid 図は、PR から Issue 自動作成までのフローを示します。
-
-```mermaid
-flowchart LR
-  PR["PR (Pull Request)"] -->|トリガー| Runner["gh-aw Runner (workflow)"]
-  Runner -->|差分を Agent に入力| Lock["lock.yml / 追加 Workflow"]
-  Lock -->|Agent の指示で| Issues["GitHub Issue 作成"]
-  Issues -->|確認| Developer["開発者がレビュー"]
-```
-
-### 🔍 テスト項目自動生成の仕組み（見える化）
-
-「何を入力にして、どうテスト項目が作られるか」を下図で可視化しています。
+## Workflow / YAML の関係（Mermaid）
 
 ```mermaid
 flowchart TD
-  A["PRの差分<br>changed files / hunks"] --> B["差分コンテキスト整形<br>(対象機能・変更意図)"]
-  B --> C["Agent推論<br>影響範囲・リスク・回帰観点を抽出"]
-  C --> D["テスト観点を分類<br>正常系 / 異常系 / 境界値 / 権限"]
-  D --> E["Issue本文を生成<br>チェックリスト形式"]
-  E --> F["GitHub Issue作成<br>担当者がレビュー・実施"]
+  A[PR opened/edited/synchronize] --> B[gh-aw-runner.yml\nname: make issue and test case from pr diff]
+  B --> C[workflow_run completed]
+  C --> D[pr-test-generator.lock.yml\nname: pr-test-generator]
+  D --> E[safe-outputs: create_issue]
+  E --> F[Issue作成\nlabels: ai-generated-tests]
+
+  G[pr-test-generator.md\n(ソース定義)] --> H[gh aw compile]
+  H --> D
 ```
 
-#### 全体フローとの紐付け
+## 各ファイルの役割
 
-下の表は可視化ノードが `## 🚀 全体フロー` のどの段階に対応するかを示します。
+### `/.github/workflows/gh-aw-runner.yml`
 
-| 可視化ノード | 対応する全体フローのステップ |
-|---|---|
-| PRの差分 | PR (Pull Request) |
-| 差分コンテキスト整形 | Runner (gh-aw Runner - 差分収集・前処理) |
-| Agent推論（影響抽出） | Lock / Agent 実行フェーズ（gh-aw による推論） |
-| テスト観点を分類・項目化 | Lock（Agent の出力をテスト観点へ整形） |
-| Issue本文を生成 | Lock（生成ルール適用） |
-| GitHub Issue作成 | Issues（Workflow による Issue 作成） |
+- `pull_request`（`opened`, `edited`, `synchronize`）で起動
+- ワークフロー名: `make issue and test case from pr diff`
+- 現在は最小構成で、主に前段トリガーとして使う
 
-この対応表を参照すると、「README の上部にある全体フローのどの部分で何が起きるか」が追いやすくなります。
+### `/.github/workflows/pr-test-generator.md`
 
-生成ロジックのイメージ（簡略）:
+- `gh-aw` のソース定義ファイル
+- `workflow_run` を受けて後段処理（Issue 生成）を定義
+- 直接実行ファイルではなく、コンパイル対象
 
-| ステップ | 入力 | 処理 | 出力 |
-|---|---|---|---|
-| 1. 差分収集 | PRの変更ファイル/差分 | 変更点を抽出 | 変更サマリ |
-| 2. 観点抽出 | 変更サマリ + 既存仕様 | 影響範囲とリスクを推論 | テスト観点リスト |
-| 3. 項目生成 | テスト観点リスト | 実行可能なチェック項目へ展開 | Issue本文（Markdown） |
+### `/.github/workflows/pr-test-generator.lock.yml`
 
-Issue に出るテスト項目の例（要約）:
+- `pr-test-generator.md` から生成される実行ファイル
+- `workflow_run`（対象: `make issue and test case from pr diff`）で起動
+- Agent 実行結果から `create_issue` を通じて Issue を作成
 
-- [ ] 正常系: 変更した API/UI が想定どおり動作する
-- [ ] 異常系: 不正入力・エラーパスで適切なレスポンス/表示になる
-- [ ] 回帰: 変更周辺の既存機能（認証、一覧、保存など）が壊れていない
-- [ ] 権限: ロール/未認証時のアクセス制御が維持されている
+### `/.github/ISSUE_TEMPLATE/ai-generated-test.yml`
 
-### 🧾 実例
-具体的な実行例（このリポジトリの実際の実行ログ）:
+- 手動で Issue を作る場合のテンプレート
+- 生成 Issue と同系統の体裁（Summary / checklist）を維持しやすい
 
-- PR: https://github.com/cocomomojo/test_mng_aw/pull/16
-- runner 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22267189912
-- lock.yml 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22267201644
-- 生成された Issue: https://github.com/cocomomojo/test_mng_aw/issues/17
+## 運用手順（最小）
 
+1. `pr-test-generator.md` を編集
+2. `gh aw compile` を実行して `pr-test-generator.lock.yml` を更新
+3. 変更を commit / push
+4. PR を作成・更新
+5. Actions 実行後、Issue が作成されることを確認
 
-
-- PR: https://github.com/cocomomojo/test_mng_aw/pull/18
-- runner 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22268723305
-- lock.yml 実行: https://github.com/cocomomojo/test_mng_aw/actions/runs/22268725417
-- 生成された Issue: https://github.com/cocomomojo/test_mng_aw/issues/20
-
-
----
-
-## 🛠️ 実際の手順
-
-1. リポジトリをフォーク／クローン
+## ローカルコマンド例
 
 ```bash
-git clone https://github.com/cocomomojo/test_mng_aw.git
-cd test_mng_aw
+gh aw compile .github/workflows/pr-test-generator.md
+git add .github/workflows/pr-test-generator.md .github/workflows/pr-test-generator.lock.yml
+git commit -m "chore: update pr-test-generator workflow"
+git push
 ```
 
-2. ブランチを切って変更を作成し、PR を出す
+## 検証ポイント
+
+- `make issue and test case from pr diff` が PR 更新で起動する
+- 続いて `pr-test-generator`（workflow_run）が起動する
+- `ai-generated-tests` ラベル付き Issue が作成される
+
+## 実例（匿名化）
+
+以下は実運用での典型例です（URL/番号は匿名化）。
+
+### 例1: UI文言変更のPR
+
+- PR: `PR #XX`（UIテキスト変更）
+- 1段目実行: `make issue and test case from pr diff` が `success`
+- 2段目実行: `pr-test-generator` が `success`
+- 出力: `ai-generated-tests` ラベル付き Issue が1件作成
+
+### 例2: テストコード追加のPR
+
+- PR: `PR #YY`（`test_app/frontend/src/test/...` の更新）
+- 1段目実行: `make issue and test case from pr diff` が `success`
+- 2段目実行: `pr-test-generator` が `success`
+- 出力: テスト観点（回帰/境界値/異常系）を含む Issue が作成
+
+### 実例の見方
+
+1. Actions で PR に紐づく `make issue and test case from pr diff` を確認
+2. その完了後に `pr-test-generator` が起動していることを確認
+3. Issues で `ai-generated-tests` ラベルを検索し、新規作成を確認
 
 ```bash
-git checkout -b feat/example
-# ファイル修正
-git add .
-git commit -m "Add example changes"
-git push origin feat/example
-# GitHub 上で PR を作成
+gh run list --limit 20
+gh issue list --label ai-generated-tests --limit 20
 ```
 
-3. PR が作成されると、gh-aw runner Workflow がトリガーされます。
+## 注意事項
 
-4. Workflow が差分を収集し、Agent（gh-aw）が Issue 用のテスト項目を生成して Issue を作成します。
+- `pr-test-generator.lock.yml` は生成物です。通常は直接編集しません。
+- 機密情報（トークン等）は GitHub Secrets で管理してください。
+- この README には、リポジトリ所有者名・実行 URL など個人特定につながる情報を記載していません。
 
----
+## 参考
 
-## ✅ 動作確認のチェックリスト
-
-1. PR を作成/更新した後、Actions タブで該当の Workflow（gh-aw-runner）が起動していることを確認する。
-2. Runner の実行ログに差分抽出や Agent 実行のログが出ていることを確認する。
-3. lock.yml（または関連 Workflow）が続けて実行されることを確認する。
-4. 自動生成された Issue（例: #17）が作成され、期待するテスト項目が記載されていることを確認する。
-
-簡易コマンドで確認（例）:
-
-```bash
-# Actions 実行状況をローカルから確認するには gh CLI を利用
-gh run list --repo cocomomojo/test_mng_aw
-gh run view 22267189912 --repo cocomomojo/test_mng_aw
-```
-
----
-
-## 🔐 必要なシークレット（COPILOT_GITHUB_TOKEN）
-
-このワークフローではリポジトリ操作や Agent 実行で追加のトークンを利用するケースがあるため、`COPILOT_GITHUB_TOKEN` という名前のリポジトリシークレットを用意してください。
-
-推奨手順（GitHub の UI）:
-
-1. リポジトリの GitHub ページに移動
-2. [Settings] → [Secrets and variables] → [Actions] を選択
-3. [New repository secret] をクリック
-4. Name に `COPILOT_GITHUB_TOKEN`、Value に生成した Personal Access Token（PAT）を入力して保存
-
-推奨トークンスコープ（運用により変わりますが最低限の例）:
-- repo（リポジトリ読み書きが必要な場合）
-- workflow（ワークフロー操作が必要な場合）
-
-gh CLI を使う例:
-
-```bash
-# 環境変数にトークンを設定してから実行
-export MY_PAT="ghp_xxx..."
-gh secret set COPILOT_GITHUB_TOKEN --body "$MY_PAT" --repo cocomomojo/test_mng_aw
-```
-
-セキュリティ注意点:
-- PAT は必要最小限の権限で発行してください。
-- 組織ポリシーで PAT の使用が制限されている場合は、Organization 管理者と相談してください。
-
-
----
-
-## 📝 備考・トラブルシューティング
-
-- Actions の権限設定が不十分だと Issue 作成が失敗します。Organization/Repo の Settings → Actions → General で権限を確認してください。
-- ローカルで gh-aw を試す場合、gh の拡張を入れて `gh aw init` を実行して設定を確認してください。
-
----
-
-## 🧰 gh-aw ローカル環境作成とコンパイル手順
-
-以下はローカルで gh-aw をセットアップし、Agentic ワークフロー定義をコンパイルして `lock.yml` を生成・push するまでの手順例です。
-
-1. gh（GitHub CLI）をインストール（未インストール時）
-
-```bash
-# Debian/Ubuntu 例
-sudo apt update && sudo apt install -y gh
-gh --version
-```
-
-2. gh にログイン
-
-```bash
-gh auth login
-```
-
-3. gh-aw 拡張をインストール
-
-```bash
-gh extension install github/gh-aw
-```
-
-4. gh-aw を初期化（対話またはリポジトリ指定）
-
-```bash
-gh aw init --repo cocomomojo/test_mng_aw
-```
-
-5. Agentic ワークフローファイルをコンパイルして `lock.yml` を生成（ローカル手動）
-
-ローカルで `gh aw compile` を実行して `lock.yml` を生成し、自分でコミット・push する運用を推奨します。ワークフロー側（`gh-aw-runner.yml`）は生成済み `lock.yml` の存在を確認する最小動作に簡略化されています。
-
-```bash
-# 例: ソースが .github/workflows/pr-test-generator.md の場合
-gh aw compile .github/workflows/pr-test-generator.md 
-```
-
-注意点:
-- ファイル名にスペースやタイプミスがあるとコマンドが失敗します（例: `pr-test-generat or.md` は誤り）。正しいファイル名を指定してください。
-- この運用では `gh-aw-runner.yml` の `permissions` は `actions: read` / `contents: read` のままで問題ありません（私がリポジトリの `gh-aw-runner.yml` を簡略化済み）。
-
-6. 生成された `lock.yml` をコミットして push
-
-```bash
-# 生成物をコミットして push
-git add .github/workflows/pr-test-generator.lock.yml
-git commit -m "Add generated lock.yml from gh-aw compile"
-git push origin YOUR_BRANCH
-```
-
-7. GitHub 上で Actions がトリガーされ、`lock.yml` に基づいて次の Workflow が実行されます。
-
-トラブルシューティングのヒント:
-- `gh aw compile` が見つからない／エラーになる場合は gh-aw 拡張のバージョンを確認してください。
-- GitHub のパーミッション（Actions → Workflow permissions）を "Read and write" にしていないと Issue の作成やラベル付けが失敗します。
-- `gh auth status` で認証状態を確認してください。
-
----
-
-## 📚 参考リンク
-  - https://github.blog/jp/2026-02-16-automate-repository-tasks-with-github-agentic-workflows/
-  - https://tech.every.tv/entry/2026/02/20/142856
-  - https://zenn.dev/0h_n0/articles/b478604163b8e2
-  - https://qiita.com/railgun-0402/items/6b9362e1d78f3e26cf49
-  - https://qiita.com/hagix/items/525c3f42c6dad204e73e
+- GitHub Agentic Workflows 公式ドキュメント
+  - https://github.github.com/gh-aw/introduction/overview/
