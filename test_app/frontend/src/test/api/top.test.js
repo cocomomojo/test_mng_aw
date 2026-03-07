@@ -34,6 +34,13 @@ describe('top api', () => {
     expect(config.headers.Authorization).toBe('Bearer TOKEN');
   });
 
+  it('does not add Authorization header when token is absent', async () => {
+    await import('../../api/top');
+
+    const config = requestInterceptor({ headers: {} });
+    expect(config.headers.Authorization).toBeUndefined();
+  });
+
   it('calls correct endpoint', async () => {
     const apiModule = await import('../../api/top');
 
