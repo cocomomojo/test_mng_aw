@@ -4,9 +4,11 @@ description: Generate test cases and issue from PR metadata + diff
 engine: copilot
 on:
    workflow_run:
-     workflows: ["make issue and test case from pr diff"]
-     types:
-       - completed
+      workflows: ["make issue and test case from pr diff"]
+      types:
+         - completed
+      branches:
+         - main
 permissions:
   contents: read
   actions: read
@@ -38,6 +40,10 @@ PR のタイトル・本文・差分から、実行可能なテスト項目を M
    - 信頼度（高/中/低）
 6. 差分がドキュメント/コメントのみなら、短い注記のみ出力し、テスト項目は作成しない。
 7. 生成する Issue はドラフト相当の内容で作成し、ラベル `ai-generated-tests` を付与する。
+8. Issue のタイトルと本文は次のフォーマットに合わせる:
+   - タイトル: `[AI] Test cases for PR: <PR_TITLE>`
+   - 本文に `## Summary` と `## Test checklist (draft)` を含める
+   - `Summary` には `PR URL` と `Confidence` を明記する
 
 出力形式:
 - Markdown チェックリスト

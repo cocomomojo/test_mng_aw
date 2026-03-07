@@ -1,8 +1,9 @@
 name: AI generated tests
-# このテンプレートはAgenticが作成したAI生成テストチェックリスト用です。
-about: Draft issue created by Agentic to hold AI-generated test checklist
+description: Draft issue created by Agentic to hold AI-generated test checklist
 title: "[AI] Test cases for PR: {{PR_TITLE}}"
-labels: ai-generated-tests, needs-review
+labels:
+  - ai-generated-tests
+  - needs-review
 body:
   - type: markdown
     attributes:
