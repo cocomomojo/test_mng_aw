@@ -7,8 +7,6 @@ on:
       workflows: ["make issue and test case from pr diff"]
       types:
          - completed
-      branches:
-         - main
 permissions:
   contents: read
   actions: read

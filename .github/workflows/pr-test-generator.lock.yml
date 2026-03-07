@@ -23,14 +23,12 @@
 #
 # Generate test cases and issue from PR metadata + diff
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"bdd8414be522f9030af16873c934b9b7f530e384b90b4a2762489f9e31439c34","compiler_version":"v0.48.1"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"e98b0189f72c460f21526e6f11e6d2596c07d5ddb47b3b4871f823746a359f72","compiler_version":"v0.48.1"}
 
 name: "pr-test-generator"
 "on":
   workflow_run:
     # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
-    branches:
-    - main
     types:
     - completed
     workflows:
