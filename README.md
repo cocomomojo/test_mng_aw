@@ -20,13 +20,13 @@
 
 ```mermaid
 flowchart TD
-  A[PR opened/edited/synchronize] --> B[gh-aw-runner.yml\nname: make issue and test case from pr diff]
-  B --> C[workflow_run completed]
-  C --> D[pr-test-generator.lock.yml\nname: pr-test-generator]
-  D --> E[safe-outputs: create_issue]
-  E --> F[Issue作成\nlabels: ai-generated-tests]
+  A["PR opened / edited / synchronize"] --> B["gh-aw-runner.yml<br/>name: make issue and test case from pr diff"]
+  B --> C["workflow_run completed"]
+  C --> D["pr-test-generator.lock.yml<br/>name: pr-test-generator"]
+  D --> E["safe-outputs: create_issue"]
+  E --> F["Issue作成<br/>labels: ai-generated-tests"]
 
-  G[pr-test-generator.md\n(ソース定義)] --> H[gh aw compile]
+  G["pr-test-generator.md<br/>(ソース定義)"] --> H["gh aw compile"]
   H --> D
 ```
 
