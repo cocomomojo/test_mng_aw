@@ -106,7 +106,7 @@ const update = async () => {
   await updateTodo(editId.value, { title: editTitle.value, done: false });
   editing.value = false;
   await load();
-  snackMsg.value = 'TODO を更新しました';
+  snackMsg.value = 'TODO を更新しました。';
   snackColor.value = 'success';
   snackbar.value = true;
 };
